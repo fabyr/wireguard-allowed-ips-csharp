@@ -19,32 +19,15 @@ public static class Calculator
     {
         List<IPNetwork> result = new(values);
 
-        // Remove all entries which conflict with one ore more disallowed ips
+        // Remove all entries which conflict with one or more disallowed ips
         result.RemoveAll(x => disallowed.Any(y => x.Overlaps(y)));
 
-        // Remove all entires which are outside of the underlying AllowedIPs-Ranges
+        // Remove all entries which are outside of the underlying AllowedIPs-Ranges
         // Nothing happens here if the underlying range is the entire address space (e.g. 0.0.0.0/0 or ::/0)
         result.RemoveAll(x => allowed.Any(y => !y.Contains(x)));
 
         // Add the networks which did not conflict with any disallowed ips
         result.AddRange(allowed.Where(x => !disallowed.Any(y => y.Overlaps(x))));
-        
-        /*List<int> rIndices = new();
-        for(int i = 0; i < result.Count; i++)
-        {
-            for(int j = 0; j < result.Count; j++)
-            {
-                if(j == i)
-                    continue;
-                if(result[i] == result[j])
-                {
-                    rIndices.Add(j);
-                }
-            }
-        }
-
-        foreach(int i in rIndices.OrderByDescending(x => x))
-            result.RemoveAt(i);*/
         
         // Remove duplicates and return
         return result.Distinct().ToArray();
@@ -61,7 +44,7 @@ public static class Calculator
         IPv4Network last = new(0, 32);
         
         // Treat the entire address space as a continous numeric range (which it is)
-        // and find the sections which are not inside a disallowed range
+        // and find the sections which are not inside a disallowed range.
         // This can be done sequentially because we sorted the disallowed ranges by ascending address value
         foreach(IPv4Network dis in sortedDisallowed)
         {
