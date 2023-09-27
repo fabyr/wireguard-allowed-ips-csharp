@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace WireguardAllowedIPs.Core;
 
 public static class Calculator
@@ -58,7 +56,7 @@ public static class Calculator
             return allowed;
         List<IPv4Network> result = new();
         
-        IPv4Network[] sortedDisallowed = disallowed.OrderBy(x => x.AddressValue).ToArray();
+        IPv4Network[] sortedDisallowed = disallowed.OrderBy(x => x.GetLowAddressValue()).ToArray();
 
         IPv4Network last = new(0, 32);
         
@@ -67,8 +65,10 @@ public static class Calculator
         // This can be done sequentially because we sorted the disallowed ranges by ascending address value
         foreach(IPv4Network dis in sortedDisallowed)
         {
-            result.AddRange(Array.ConvertAll(last.SummarizeAddressRangeWith(new IPv4Network(dis.GetLowAddressValue() - 1, 32)), x => (IPv4Network)x));
-            last = new IPv4Network(dis.GetHighAddressValue() + 1, 32);
+            uint low = dis.GetLowAddressValue();
+            uint high = dis.GetHighAddressValue();
+            result.AddRange(Array.ConvertAll(last.SummarizeAddressRangeWith(new IPv4Network(low > 0 ? low - 1 : low, 32)), x => (IPv4Network)x));
+            last = new IPv4Network(high < uint.MaxValue ? high + 1 : high, 32);
         }
 
         // Finally the last section extends to the maximum address value (all 1s)
@@ -90,14 +90,16 @@ public static class Calculator
             return allowed;
         List<IPv6Network> result = new();
         
-        IPv6Network[] sortedDisallowed = disallowed.OrderBy(x => x.AddressValue).ToArray();
+        IPv6Network[] sortedDisallowed = disallowed.OrderBy(x => x.GetLowAddressValue()).ToArray();
 
         IPv6Network last = new(UInt128.Zero, 128);
         
         foreach(IPv6Network dis in sortedDisallowed)
         {
-            result.AddRange(Array.ConvertAll(last.SummarizeAddressRangeWith(new IPv6Network(dis.GetLowAddressValue() - 1, 128)), x => (IPv6Network)x));
-            last = new IPv6Network(dis.GetHighAddressValue() + 1, 128);
+            UInt128 low = dis.GetLowAddressValue();
+            UInt128 high = dis.GetHighAddressValue();
+            result.AddRange(Array.ConvertAll(last.SummarizeAddressRangeWith(new IPv6Network(low > 0 ? low - 1 : low, 128)), x => (IPv6Network)x));
+            last = new IPv6Network(high < UInt128.MaxValue ? high + 1 : high, 128);
         }
 
         result.AddRange(Array.ConvertAll(last.SummarizeAddressRangeWith(new IPv6Network(UInt128.MaxValue, 128)), x => (IPv6Network)x));

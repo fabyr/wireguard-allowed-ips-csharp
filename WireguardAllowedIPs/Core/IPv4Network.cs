@@ -1,11 +1,7 @@
-using System.Numerics;
-
 namespace WireguardAllowedIPs.Core;
 
 public class IPv4Network : IPNetwork
 {
-    public static readonly IPv4Network Any = new(new byte[] { 0, 0, 0, 0 }, 0);
-
     public uint AddressValue => (uint)(
                                     ((uint)AddressBytes![0] << 24) |
                                     ((uint)AddressBytes![1] << 16) |
@@ -30,9 +26,7 @@ public class IPv4Network : IPNetwork
         (byte)((value >> 8) & 0xFF),
         (byte)(value & 0xFF),
     }, cidr)
-    {
-
-    }
+    { }
 
     public IPv4Network(string addressString, int cidr) : this(ParseAddressString(addressString), cidr)
     { }
@@ -42,6 +36,8 @@ public class IPv4Network : IPNetwork
     public uint GetLowAddressValue() => AddressValue & GetNetworkMask();
     public uint GetHighAddressValue() => AddressValue | GetHostMask();
 
+    private static ArgumentException DifferentTypeException() => new("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
+
     public override bool Contains(IPNetwork other)
     {
         if(other is IPv4Network ip)
@@ -49,7 +45,7 @@ public class IPv4Network : IPNetwork
             return ip.GetLowAddressValue() >= GetLowAddressValue()
                    && ip.GetHighAddressValue() <= GetHighAddressValue();
         }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
+        throw DifferentTypeException();
     }
 
     public override bool Overlaps(IPNetwork other)
@@ -59,9 +55,11 @@ public class IPv4Network : IPNetwork
             return uint.Max(ip.GetLowAddressValue(), GetLowAddressValue()) <= 
                    uint.Min(ip.GetHighAddressValue(), GetHighAddressValue());
         }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
+        throw DifferentTypeException();
     }
 
+    // Adapted from python sources
+    // https://github.com/python/cpython/blob/8ac20e5404127d68624339c0b318abe2d14fe514/Lib/ipaddress.py#L200
     public override IPNetwork[] SummarizeAddressRangeWith(IPNetwork b)
     {
         if(b is IPv4Network ip)
@@ -90,7 +88,7 @@ public class IPv4Network : IPNetwork
             }
             return list.ToArray();
         }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
+        throw DifferentTypeException();
     }
     
     public static byte[] ParseAddressString(string addressString)

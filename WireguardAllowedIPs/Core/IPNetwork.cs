@@ -1,7 +1,8 @@
-using System.Numerics;
-
 namespace WireguardAllowedIPs.Core;
 
+/// <summary>
+/// Baseclass for IPv4Network and IPv6Network
+/// </summary>
 public abstract class IPNetwork
 {
     public int Cidr { get; set; }
@@ -42,7 +43,7 @@ public abstract class IPNetwork
     public abstract IPNetwork[] SummarizeAddressRangeWith(IPNetwork b);
 
     /// <summary>
-    /// Returns a string with both the address part and the netmask in CIDR notation according to the following format: <br/>
+    /// Returns a string with both the address part and the netmask in CIDR notation according to the following format: <br/><br/>
     /// {address}/{cidr}
     /// </summary>
     public override string ToString()
@@ -62,16 +63,11 @@ public abstract class IPNetwork
     {
         string[] parts = value.Split('/');
         if(parts.Length != 2)
-            throw new FormatException($"Invalid address: {value}");
-        try
-        {
-            if(parts[0].Contains(':')) // IPv6
-                return new IPv6Network(parts[0], int.Parse(parts[1]));
-            return new IPv4Network(parts[0], int.Parse(parts[1]));
-        }
-        catch(FormatException ex)
-        {
-            throw new FormatException($"Address parsing error ('{value}'): {ex.Message}", ex);
-        }
+            throw new FormatException("Invalid address.");
+        if(!int.TryParse(parts[1], out int cidr))
+            throw new FormatException("Invalid CIDR.");
+        if(parts[0].Contains(':')) // IPv6
+            return new IPv6Network(parts[0], cidr);
+        return new IPv4Network(parts[0], cidr);
     }
 }

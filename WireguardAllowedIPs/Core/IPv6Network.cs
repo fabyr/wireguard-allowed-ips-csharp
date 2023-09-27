@@ -1,14 +1,10 @@
 using System.Globalization;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace WireguardAllowedIPs.Core;
 
 public class IPv6Network : IPNetwork
 {
-    public static readonly IPv6Network Any = new(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 0);
-
     private enum ParseState
     {
         ReadyForData,
@@ -63,9 +59,7 @@ public class IPv6Network : IPNetwork
         (byte)((value >> 8) & 0xFF),
         (byte)(value & 0xFF)
     }, cidr)
-    {
-
-    }
+    { }
 
     public IPv6Network(string addressString, int cidr) : this(ParseAddressString(addressString), cidr)
     { }
@@ -75,6 +69,8 @@ public class IPv6Network : IPNetwork
     public UInt128 GetLowAddressValue() => AddressValue & GetNetworkMask();
     public UInt128 GetHighAddressValue() => AddressValue | GetHostMask();
 
+    private static ArgumentException DifferentTypeException() => new("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
+
     public override bool Contains(IPNetwork other)
     {
         if(other is IPv6Network ip)
@@ -82,7 +78,7 @@ public class IPv6Network : IPNetwork
             return ip.GetLowAddressValue() >= GetLowAddressValue()
                    && ip.GetHighAddressValue() <= GetHighAddressValue();
         }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
+        throw DifferentTypeException();
     }
 
     public override bool Overlaps(IPNetwork other)
@@ -92,15 +88,17 @@ public class IPv6Network : IPNetwork
             return UInt128.Max(ip.GetLowAddressValue(), GetLowAddressValue()) <= 
                    UInt128.Min(ip.GetHighAddressValue(), GetHighAddressValue());
         }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
+        throw DifferentTypeException();
     }
 
+    // Adapted from python sources
+    // https://github.com/python/cpython/blob/8ac20e5404127d68624339c0b318abe2d14fe514/Lib/ipaddress.py#L200
     public override IPNetwork[] SummarizeAddressRangeWith(IPNetwork other)
     {
         if(other is IPv6Network ip)
         {
             if(Cidr != 128 || ip.Cidr != 128)
-                throw new ArgumentException("Can only construct an address range between two /32 addresses");
+                throw new ArgumentException("Can only construct an address range between two /128 addresses");
 
             UInt128 first = AddressValue;
             UInt128 last = ip.AddressValue;
@@ -124,7 +122,7 @@ public class IPv6Network : IPNetwork
             }
             return list.ToArray();
         }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
+        throw DifferentTypeException();
     }
 
     public override bool Equals(object? obj)
@@ -188,7 +186,7 @@ public class IPv6Network : IPNetwork
 
         for(int i = 0; i < segments.Length; i++)
         {
-            if(longest != null)
+            if(excludeZeroSegments && longest != null)
             {
                 if(longest.Value.Item1 == i)
                 {
@@ -284,6 +282,9 @@ public class IPv6Network : IPNetwork
             throw new FormatException("Too many segments in IPv6 address.");
 
         int missingSegments = maxSegments - partA.Count - partB.Count;
+
+        if(!hasSeenDoubleSeparator && missingSegments > 0)
+            throw new FormatException("Invalid IPv6 address (Missing segments).");
 
         List<byte> bytes = new();
 

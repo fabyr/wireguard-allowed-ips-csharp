@@ -89,7 +89,7 @@ public class Program
             try
             {
                 allowed[i] = IPNetwork.Parse(allowedIps[i]);
-            } catch(FormatException ex)
+            } catch(Exception ex)
             {
                 Console.WriteLine($"Could not parse network '{allowedIps[i]}': {ex.Message}");
                 return;
@@ -101,7 +101,7 @@ public class Program
             try
             {
                 disallowed[i] = IPNetwork.Parse(disallowedIps[i]);
-            } catch(FormatException ex)
+            } catch(Exception ex)
             {
                 Console.WriteLine($"Could not parse network '{disallowedIps[i]}': {ex.Message}");
                 return;
