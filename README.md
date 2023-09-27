@@ -1,14 +1,27 @@
 # wireguard-allowed-ips-csharp
 
-A small CLI tool and library written in C# to calculate the `AllowedIPs` field 
+A small CLI tool or library written in C# to calculate the `AllowedIPs` field 
 of a wireguard config if you want to exclude certain IP-Ranges.
 
 Inspired by (and used for test reference):
 https://krasovs.ky/2021/07/04/wireguard-allowed-ips.html
 
+## Table of contents
+1. [Dependencies](#dependencies)
+2. [Releases](#releases)
+3. [Usage](#usage)
+4. [Usage within another C# application](#usage-within-another-c-application)
+5. [Motivation](#motivation)
+6. [License](#license)
+
 ## Dependencies
 This program requires [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0).
 Other than that it was designed to require no other dependencies.
+
+## Releases
+Executable files are provided for all major platforms. (Because why not :>) \
+All files ending in `-selfcontained` do not require the `.NET 7` Runtime to be installed on the system.
+Though they are *massively greater in filesize* than the runtime dependent ones.
 
 ## Usage
 Upon running the program without arguments via `dotnet run` (inside the cloned repo) or via the precompiled executable,
@@ -76,3 +89,6 @@ https://krasovs.ky/2021/07/04/wireguard-allowed-ips.html \
 (The code is written in Go and uses the `go4.org/netipx` package internally)
 
 I needed a way to compute `AllowedIPs` dynamically myself. And also within a C# application. So I decided to do some research and write a small library for exactly that purpose!
+
+## License
+This project is licensed under the MIT license.
