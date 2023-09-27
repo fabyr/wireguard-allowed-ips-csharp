@@ -22,6 +22,19 @@ public class IPv6Test
     }
 
     [Theory]
+    [InlineData("0::0/0")]
+    [InlineData("0fef::0/16")]
+    [InlineData("c4f1:00ea:f260::/64")]
+    [InlineData("5f4a:0f68:4481:5183:9614:abae:4003:0862/128")]
+    [InlineData("c4f1:ea:f260:b2d5:0:efde:efde:efde/64")]
+    public void Parse_ToString_Inequality(string ipv6)
+    {
+        IPv6Network ip = (IPv6Network)IPNetwork.Parse(ipv6);
+
+        Assert.NotEqual(ipv6, ip.ToString());
+    }
+
+    [Theory]
     [InlineData("fe80::/16", "0xFE800000000000000000000000000000")]
     [InlineData("::/0", "0x00000000000000000000000000000000")]
     [InlineData("::0/0", "0x00000000000000000000000000000000")]
