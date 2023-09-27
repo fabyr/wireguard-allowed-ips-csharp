@@ -38,8 +38,14 @@ public static class Calculator
         if(disallowed.Length == 0)
             return allowed;
         List<IPv4Network> result = new();
+
+        // Remove duplicates
+        disallowed = disallowed.Distinct().ToArray();
         
-        IPv4Network[] sortedDisallowed = disallowed.OrderBy(x => x.GetLowAddressValue()).ToArray();
+        // Remove disallowed ranges which are already contained within another disallowed range
+        // Then sort by ascending address value
+        IPv4Network[] sortedDisallowed = disallowed.Where(x => !disallowed.Any(y => !x.Equals(y) && y.Contains(x)))
+                                         .OrderBy(x => x.GetLowAddressValue()).ToArray();
 
         IPv4Network last = new(0, 32);
         
@@ -73,7 +79,10 @@ public static class Calculator
             return allowed;
         List<IPv6Network> result = new();
         
-        IPv6Network[] sortedDisallowed = disallowed.OrderBy(x => x.GetLowAddressValue()).ToArray();
+        disallowed = disallowed.Distinct().ToArray();
+        
+        IPv6Network[] sortedDisallowed = disallowed.Where(x => !disallowed.Any(y => !x.Equals(y) && y.Contains(x)))
+                                         .OrderBy(x => x.GetLowAddressValue()).ToArray();
 
         IPv6Network last = new(UInt128.Zero, 128);
         
