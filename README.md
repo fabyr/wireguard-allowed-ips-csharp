@@ -42,6 +42,11 @@ Options:
 
  -d, --disallowed       Set the disallowed ip ranges in CIDR notation, separated by commas.
 ```
+Make sure not to place spaces between multiple networks: \
+Incorrect: `--disallowed 10.0.0.0/8, 192.168.0.0/16` \
+Correct: `--disallowed 10.0.0.0/8,192.168.0.0/16` \
+The former only works if quoted: \
+`--disallowed "10.0.0.0/8, 192.168.0.0/16"`
 
 By default, if no allowed IP-Ranges are supplied, all networks are included in the calculation (`0.0.0.0/0, ::0/0`).
 
@@ -59,6 +64,15 @@ dotnet run --allowed 198.18.0.0/15 --disallowed 198.18.15.0/24
 ```
 ```
 198.18.0.0/21, 198.18.8.0/22, 198.18.12.0/23, 198.18.14.0/24, 198.18.16.0/20, 198.18.32.0/19, 198.18.64.0/18, 198.18.128.0/17, 198.19.0.0/16
+```
+---
+
+You can mix `IPv4` and `IPv6` to your liking, the application will group them accordingly.
+```
+dotnet run --allowed 198.0.0.0/8,f000::/4 --disallowed fe80:abcd::/32,198.18.15.0/24
+```
+```
+198.0.0.0/12, 198.16.0.0/15, 198.18.0.0/21, 198.18.8.0/22, 198.18.12.0/23, 198.18.14.0/24, 198.18.16.0/20, 198.18.32.0/19, 198.18.64.0/18, 198.18.128.0/17, 198.19.0.0/16, 198.20.0.0/14, 198.24.0.0/13, 198.32.0.0/11, 198.64.0.0/10, 198.128.0.0/9, f000::/5, f800::/6, fc00::/7, fe00::/9, fe80::/17, fe80:8000::/19, fe80:a000::/21, fe80:a800::/23, fe80:aa00::/24, fe80:ab00::/25, fe80:ab80::/26, fe80:abc0::/29, fe80:abc8::/30, fe80:abcc::/32, fe80:abce::/31, fe80:abd0::/28, fe80:abe0::/27, fe80:ac00::/22, fe80:b000::/20, fe80:c000::/18, fe81::/16, fe82::/15, fe84::/14, fe88::/13, fe90::/12, fea0::/11, fec0::/10, ff00::/8
 ```
 
 ## Usage within another C# application
