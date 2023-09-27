@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace WireguardAllowedIPs.Core;
@@ -141,34 +142,71 @@ public class IPv6Network : IPNetwork
     private string GetAddressString(bool excludeZeroSegments = true)
     {
         StringBuilder sb = new();
-        bool isWaitingForNonzero = false;
-        bool hasUsedDoubleSeparator = false;
+
+        // Transform 16 bytes into 8 x 16-bit segments
+        ushort[] segments = new ushort[8];
         for(int i = 0; i < 8; i++)
         {
             ushort value = (ushort)((AddressBytes![i * 2] << 8) | AddressBytes![i * 2 + 1]);
-            if(excludeZeroSegments)
+            segments[i] = value;
+        }
+
+        List<(int, int)> zeroSections = new();
+        
+        bool inZeroSection = false;
+        int currentCounter = 0;
+
+        // Find all indices at which zeros occur. The second integer indicates the additional zeros afterwards.
+        for(int i = 0; i < segments.Length; i++)
+        {
+            if(segments[i] == 0)
             {
-                if(!hasUsedDoubleSeparator && value == 0)
+                if(inZeroSection)
                 {
-                    if(!isWaitingForNonzero)
-                    {
-                        sb.Append(":");
-                        isWaitingForNonzero = true;
-                    }
+                    currentCounter++;
+                }
+                else
+                {
+                    currentCounter = 0;
+                    inZeroSection = true;
+                }
+                continue;
+            }
+            if(inZeroSection)
+            {
+                zeroSections.Add((i - 1 - currentCounter, currentCounter));
+            }
+            inZeroSection = false;
+        }
+        if(inZeroSection)
+            zeroSections.Add((segments.Length - 1 - currentCounter, currentCounter));
+
+        // Select the longest continous streak of zeros, which will become '::'
+        (int, int)? longest = zeroSections.Count > 0 ? zeroSections.MaxBy((x) => x.Item2) : null;
+
+        bool tillEnd = longest != null && longest.Value.Item1 + longest.Value.Item2 == 7;
+
+        for(int i = 0; i < segments.Length; i++)
+        {
+            if(longest != null)
+            {
+                if(longest.Value.Item1 == i)
+                {
+                    sb.Append(":");
                     continue;
                 }
-                if(isWaitingForNonzero && value != 0)
-                {
-                    hasUsedDoubleSeparator = true;
-                }
+                else if(i > longest.Value.Item1 && i <= longest.Value.Item1 + longest.Value.Item2)
+                    continue;
             }
-            
             if(i != 0)
                 sb.Append(":");
-            sb.AppendFormat("{0:x}", value);
+            sb.AppendFormat("{0:x}", segments[i]);
         }
-        if(isWaitingForNonzero && !hasUsedDoubleSeparator)
+
+        // If the last segment is part of a zero-streak, we need to fill up a missing colon
+        if(tillEnd)
             sb.Append(":");
+
         return sb.ToString();
     }
     
