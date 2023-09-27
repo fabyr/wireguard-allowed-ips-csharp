@@ -1,7 +1,6 @@
 using System.Numerics;
-using WireguardAllowedIPs.Core;
 
-namespace WireguardAllowedIPs;
+namespace WireguardAllowedIPs.Core;
 
 public static class Calculator
 {
