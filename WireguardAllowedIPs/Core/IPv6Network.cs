@@ -13,7 +13,7 @@ public class IPv6Network : IPNetwork
         ReadyForData,
         InSeparator
     }
-
+    
     public override string AddressRepresentation => GetAddressString();
 
     public UInt128 AddressValue => (UInt128)(
@@ -94,34 +94,13 @@ public class IPv6Network : IPNetwork
         throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
     }
 
-    public override IPNetwork[] Exclude(IPNetwork other)
-    {
-        if(other is IPv6Network ip)
-        {
-            if(!Overlaps(ip))
-                throw new ArgumentOutOfRangeException("Address ranges don't overlap.");
-            int minCidr = Math.Min(Cidr + 1, ip.Cidr);
-            int maxCidr = Math.Max(Cidr + 1, ip.Cidr);
-
-            IPv6Network first = this;
-            IPv6Network last = ip;
-            if(ip.AddressValue < first.AddressValue)
-                (first, last) = (last, first);
-
-            return new IPv6Network(first.AddressValue & first.GetNetworkMask(), 128)
-                    .SummarizeAddressRangeWith(new IPv6Network(last.AddressValue & last.GetNetworkMask() - 1, 128))
-                    .Concat(
-                        new IPv6Network(last.AddressValue | last.GetHostMask() + 1, 128)
-                        .SummarizeAddressRangeWith(new IPv6Network(first.AddressValue | first.GetNetworkMask(), 128))
-                    ).Where(x => x.Cidr >= minCidr && x.Cidr <= maxCidr).ToArray();
-        }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
-    }
-
     public override IPNetwork[] SummarizeAddressRangeWith(IPNetwork other)
     {
         if(other is IPv6Network ip)
         {
+            if(Cidr != 128 || ip.Cidr != 128)
+                throw new ArgumentException("Can only construct an address range between two /32 addresses");
+
             UInt128 first = AddressValue;
             UInt128 last = ip.AddressValue;
             if(ip.AddressValue < AddressValue)
@@ -145,12 +124,6 @@ public class IPv6Network : IPNetwork
             return list.ToArray();
         }
         throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
-    }
-
-    public override BigInteger Scalar()
-    {
-        // ugly
-        return BigInteger.Parse(AddressValue.ToString());
     }
 
     public override bool Equals(object? obj)

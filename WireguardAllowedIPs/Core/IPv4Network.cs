@@ -62,34 +62,12 @@ public class IPv4Network : IPNetwork
         throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
     }
 
-    public override IPNetwork[] Exclude(IPNetwork b)
-    {
-        if(b is IPv4Network ip)
-        {   
-            if(!Overlaps(ip))
-                throw new ArgumentOutOfRangeException("Address ranges don't overlap.");
-            int minCidr = Math.Min(Cidr + 1, ip.Cidr);
-            int maxCidr = Math.Max(Cidr + 1, ip.Cidr);
-
-            IPv4Network first = this;
-            IPv4Network last = ip;
-            if(ip.AddressValue < first.AddressValue)
-                (first, last) = (last, first);
-
-            return new IPv4Network(first.AddressValue & first.GetNetworkMask(), 32)
-                    .SummarizeAddressRangeWith(new IPv4Network(last.AddressValue & last.GetNetworkMask() - 1, 32))
-                    .Concat(
-                        new IPv4Network(last.AddressValue | last.GetHostMask() + 1, 32)
-                        .SummarizeAddressRangeWith(new IPv4Network(first.AddressValue | first.GetNetworkMask(), 32))
-                    ).Where(x => x.Cidr >= minCidr && x.Cidr <= maxCidr).ToArray();
-        }
-        throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
-    }
-
     public override IPNetwork[] SummarizeAddressRangeWith(IPNetwork b)
     {
         if(b is IPv4Network ip)
         {
+            if(Cidr != 32 || ip.Cidr != 32)
+                throw new ArgumentException("Can only construct an address range between two /32 addresses");
             uint first = AddressValue;
             uint last = ip.AddressValue;
             if(last < first)
@@ -114,12 +92,7 @@ public class IPv4Network : IPNetwork
         }
         throw new ArgumentException("other", $"Can only compare to another instance of {nameof(IPv4Network)}");
     }
-
-    public override BigInteger Scalar()
-    {
-        return new BigInteger(AddressValue);
-    }
-
+    
     public static byte[] ParseAddressString(string addressString)
     {
         string[] parts = addressString.Split('.');
