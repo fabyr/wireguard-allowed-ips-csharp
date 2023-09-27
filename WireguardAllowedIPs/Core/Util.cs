@@ -29,7 +29,7 @@ internal static class Util
         if(value == 0)
             return 32;
         
-        return Math.Min(32, BitLength32(~value & (value - 1)));
+        return BitLength32(~value & (value - 1));
     }
     
     /// <summary>
@@ -59,6 +59,6 @@ internal static class Util
         if(value == 0)
             return 128;
         
-        return Math.Min(128, BitLength128(~value & (value - 1)));
+        return BitLength128(~value & (value - 1));
     }
 }
