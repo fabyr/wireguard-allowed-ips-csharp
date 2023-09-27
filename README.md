@@ -24,7 +24,9 @@ All files ending in `-selfcontained` do not require the `.NET 7` Runtime to be i
 Though they are *massively greater in filesize* than the runtime dependent ones.
 
 ## Usage
-Upon running the program without arguments via `dotnet run` (inside the cloned repo) or via the precompiled executable,
+(*Note:* if you want to use `dotnet run`, make sure the terminal's working directory is [WireguardAllowedIPs](/WireguardAllowedIPs/): `cd WireguardAllowedIPs` inside the reposity directory)
+
+Upon running the program without arguments via `dotnet run` or via the precompiled executable,
 a help is displayed:
 ```
 Usage: wireguard-allowed-ips [-h] [-a "all"|allowed-ranges] [-d disallowed-ranges]
