@@ -1,5 +1,4 @@
-﻿using System.Net;
-using WireguardAllowedIPs.Core;
+﻿using WireguardAllowedIPs.Core;
 
 namespace WireguardAllowedIPs;
 
