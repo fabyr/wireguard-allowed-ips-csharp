@@ -15,12 +15,12 @@ https://krasovs.ky/2021/07/04/wireguard-allowed-ips.html
 6. [License](#license)
 
 ## Dependencies
-This program requires [.NET 7](https://dotnet.microsoft.com/en-us/download/dotnet/7.0).
+This program requires [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
 Other than that it was designed to require no other dependencies.
 
 ## Releases
 Executable files are provided for all major platforms. (Because why not :>) \
-All files ending in `-selfcontained` do not require the `.NET 7` Runtime to be installed on the system.
+All files ending in `-selfcontained` do not require the `.NET 8` Runtime to be installed on the system.
 Though they are *massively greater in filesize* than the runtime dependent ones.
 
 ## Usage
