@@ -3,16 +3,11 @@ namespace WireguardAllowedIPs.Core;
 /// <summary>
 /// Baseclass for IPv4Network and IPv6Network
 /// </summary>
-public abstract class IPNetwork
+public abstract class IPNetwork(int cidr)
 {
-    public int Cidr { get; set; }
+    public int Cidr { get; set; } = cidr;
     public abstract string AddressRepresentation { get; }
     public byte[]? AddressBytes { get; protected set; }
-
-    public IPNetwork(int cidr)
-    {
-        Cidr = cidr;
-    }
 
     /// <summary>
     /// Tests if the current instance fully contains another network. <br/>
@@ -31,7 +26,7 @@ public abstract class IPNetwork
     /// <param name="other">The other network to compare with.</param>
     /// <returns>True, if they overlap. False otherwise.</returns>
     public abstract bool Overlaps(IPNetwork other);
-    
+
     /// <summary>
     /// Finds all address ranges (networks) between the address of the current instance and <paramref name="b"/> <br/>
     /// Note: Both addresses must be pure addresses and not networks. <br/>
@@ -62,11 +57,11 @@ public abstract class IPNetwork
     public static IPNetwork Parse(string value)
     {
         string[] parts = value.Split('/');
-        if(parts.Length != 2)
+        if (parts.Length != 2)
             throw new FormatException("Invalid address.");
-        if(!int.TryParse(parts[1], out int cidr))
+        if (!int.TryParse(parts[1], out int cidr))
             throw new FormatException("Invalid CIDR.");
-        if(parts[0].Contains(':')) // IPv6
+        if (parts[0].Contains(':')) // IPv6
             return new IPv6Network(parts[0], cidr);
         return new IPv4Network(parts[0], cidr);
     }

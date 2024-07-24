@@ -22,36 +22,36 @@ public class Program
             Console.WriteLine(" -d, --disallowed\tSet the disallowed ip ranges in CIDR notation, separated by commas.");
         }
 
-        if(args.Length == 0)
+        if (args.Length == 0)
         {
             PrintHelp();
             return;
         }
 
-        string[] allowedIps = new string[] { };
-        string[] disallowedIps = new string[] { };
+        string[] allowedIps = [];
+        string[] disallowedIps = [];
 
-        for(int i = 0; i < args.Length; i++)
+        for (int i = 0; i < args.Length; i++)
         {
             string arg = args[i];
-            if(arg.StartsWith("-"))
+            if (arg.StartsWith('-'))
             {
                 string[] innerArgList;
-                if(arg.StartsWith("--"))
-                    innerArgList = new string[1] { arg[2..] };
+                if (arg.StartsWith("--"))
+                    innerArgList = [arg[2..]];
                 else
                     // a single dash corresponds to single character arguments afterwards
                     innerArgList = arg[1..].Select(x => x.ToString()).ToArray();
-                
-                foreach(string innerArg in innerArgList)
+
+                foreach (string innerArg in innerArgList)
                 {
-                    switch(innerArg)
+                    switch (innerArg)
                     {
                         case "help" or "h":
                             PrintHelp();
                             return;
                         case "allowed" or "a":
-                            if(i == args.Length - 1)
+                            if (i == args.Length - 1)
                             {
                                 Console.WriteLine($"Missing allowed IPs argument! (after '{innerArg}')");
                                 return;
@@ -59,7 +59,7 @@ public class Program
                             allowedIps = args[++i].Split(',');
                             break;
                         case "disallowed" or "d":
-                            if(i == args.Length - 1)
+                            if (i == args.Length - 1)
                             {
                                 Console.WriteLine($"Missing disallowed IPs argument! (after '{innerArg}')");
                                 return;
@@ -73,34 +73,36 @@ public class Program
                 }
             }
         }
-        
-        if(allowedIps.Length == 0)
-            allowedIps = new[] { "all" }; // Default is allow all
 
-        if(allowedIps.Length == 1 && allowedIps[0] == "all")
-            allowedIps = new[] { "0.0.0.0/0", "::/0" };
-        
+        if (allowedIps.Length == 0)
+            allowedIps = ["all"]; // Default is allow all
+
+        if (allowedIps.Length == 1 && allowedIps[0] == "all")
+            allowedIps = ["0.0.0.0/0", "::/0"];
+
         IPNetwork[] allowed = new IPNetwork[allowedIps.Length];
         IPNetwork[] disallowed = new IPNetwork[disallowedIps.Length];
 
-        for(int i = 0; i < allowed.Length; i++)
+        for (int i = 0; i < allowed.Length; i++)
         {
             try
             {
                 allowed[i] = IPNetwork.Parse(allowedIps[i]);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine($"Could not parse network '{allowedIps[i]}': {ex.Message}");
                 return;
             }
         }
 
-        for(int i = 0; i < disallowed.Length; i++)
+        for (int i = 0; i < disallowed.Length; i++)
         {
             try
             {
                 disallowed[i] = IPNetwork.Parse(disallowedIps[i]);
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine($"Could not parse network '{disallowedIps[i]}': {ex.Message}");
                 return;

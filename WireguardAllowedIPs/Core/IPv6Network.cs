@@ -10,20 +10,20 @@ public class IPv6Network : IPNetwork
         ReadyForData,
         InSeparator
     }
-    
+
     public override string AddressRepresentation => GetAddressString();
 
     public UInt128 AddressValue => (UInt128)(
-                                    ((UInt128)AddressBytes![0]  << 120) |
-                                    ((UInt128)AddressBytes![1]  << 112) |
-                                    ((UInt128)AddressBytes![2]  << 104) |
-                                    ((UInt128)AddressBytes![3]  << 96) |
-                                    ((UInt128)AddressBytes![4]  << 88) |
-                                    ((UInt128)AddressBytes![5]  << 80) |
-                                    ((UInt128)AddressBytes![6]  << 72) |
-                                    ((UInt128)AddressBytes![7]  << 64) |
-                                    ((UInt128)AddressBytes![8]  << 56) |
-                                    ((UInt128)AddressBytes![9]  << 48) |
+                                    ((UInt128)AddressBytes![0] << 120) |
+                                    ((UInt128)AddressBytes![1] << 112) |
+                                    ((UInt128)AddressBytes![2] << 104) |
+                                    ((UInt128)AddressBytes![3] << 96) |
+                                    ((UInt128)AddressBytes![4] << 88) |
+                                    ((UInt128)AddressBytes![5] << 80) |
+                                    ((UInt128)AddressBytes![6] << 72) |
+                                    ((UInt128)AddressBytes![7] << 64) |
+                                    ((UInt128)AddressBytes![8] << 56) |
+                                    ((UInt128)AddressBytes![9] << 48) |
                                     ((UInt128)AddressBytes![10] << 40) |
                                     ((UInt128)AddressBytes![11] << 32) |
                                     ((UInt128)AddressBytes![12] << 24) |
@@ -34,14 +34,14 @@ public class IPv6Network : IPNetwork
 
     public IPv6Network(byte[] bytes, int cidr) : base(cidr)
     {
-        if(bytes.Length != 16)
+        if (bytes.Length != 16)
             throw new ArgumentException("An IPv6 address always consists of 128 bits (16 bytes)");
-        if(cidr < 0 || cidr > 128)
-            throw new ArgumentOutOfRangeException("cidr", "CIDR must be between 0 and 128 (both inclusive)");
+        if (cidr < 0 || cidr > 128)
+            throw new ArgumentOutOfRangeException(nameof(cidr), "CIDR must be between 0 and 128 (both inclusive)");
         AddressBytes = bytes;
     }
 
-    public IPv6Network(UInt128 value, int cidr) : this(new byte[] { 
+    public IPv6Network(UInt128 value, int cidr) : this([
         (byte)(value >> 120),
         (byte)((value >> 112) & 0xFF),
         (byte)((value >> 104) & 0xFF),
@@ -58,7 +58,7 @@ public class IPv6Network : IPNetwork
         (byte)((value >> 16) & 0xFF),
         (byte)((value >> 8) & 0xFF),
         (byte)(value & 0xFF)
-    }, cidr)
+    ], cidr)
     { }
 
     public IPv6Network(string addressString, int cidr) : this(ParseAddressString(addressString), cidr)
@@ -73,7 +73,7 @@ public class IPv6Network : IPNetwork
 
     public override bool Contains(IPNetwork other)
     {
-        if(other is IPv6Network ip)
+        if (other is IPv6Network ip)
         {
             return ip.GetLowAddressValue() >= GetLowAddressValue()
                    && ip.GetHighAddressValue() <= GetHighAddressValue();
@@ -83,9 +83,9 @@ public class IPv6Network : IPNetwork
 
     public override bool Overlaps(IPNetwork other)
     {
-        if(other is IPv6Network ip)
+        if (other is IPv6Network ip)
         {
-            return UInt128.Max(ip.GetLowAddressValue(), GetLowAddressValue()) <= 
+            return UInt128.Max(ip.GetLowAddressValue(), GetLowAddressValue()) <=
                    UInt128.Min(ip.GetHighAddressValue(), GetHighAddressValue());
         }
         throw DifferentTypeException();
@@ -95,45 +95,46 @@ public class IPv6Network : IPNetwork
     // https://github.com/python/cpython/blob/8ac20e5404127d68624339c0b318abe2d14fe514/Lib/ipaddress.py#L200
     public override IPNetwork[] SummarizeAddressRangeWith(IPNetwork other)
     {
-        if(other is IPv6Network ip)
+        if (other is IPv6Network ip)
         {
-            if(Cidr != 128 || ip.Cidr != 128)
+            if (Cidr != 128 || ip.Cidr != 128)
                 throw new ArgumentException("Can only construct an address range between two /128 addresses");
 
             UInt128 first = AddressValue;
             UInt128 last = ip.AddressValue;
-            if(ip.AddressValue < AddressValue)
+            if (ip.AddressValue < AddressValue)
                 (first, last) = (last, first);
-            List<IPv6Network> list = new();
-            while(first <= last)
+            List<IPv6Network> list = [];
+            while (first <= last)
             {
                 int nbits = Math.Min(Util.CountRighthandZeroBits128(first), Util.BitLength128(last - first + 1) - 1);
                 list.Add(new IPv6Network(first, 128 - nbits));
                 try
                 {
-                    checked 
+                    checked
                     {
                         first += UInt128.One << nbits;
                     }
-                } catch(OverflowException)
+                }
+                catch (OverflowException)
                 {
                     break;
                 }
             }
-            return list.ToArray();
+            return [.. list];
         }
         throw DifferentTypeException();
     }
 
     public override bool Equals(object? obj)
     {
-        if(obj is IPv6Network ip)
+        if (obj is IPv6Network ip)
             return ip.AddressValue == AddressValue && ip.Cidr == Cidr;
         return false;
     }
 
     public override int GetHashCode()
-    { 
+    {
         return HashCode.Combine(AddressValue, Cidr);
     }
 
@@ -143,23 +144,23 @@ public class IPv6Network : IPNetwork
 
         // Transform 16 bytes into 8 x 16-bit segments
         ushort[] segments = new ushort[8];
-        for(int i = 0; i < 8; i++)
+        for (int i = 0; i < 8; i++)
         {
             ushort value = (ushort)((AddressBytes![i * 2] << 8) | AddressBytes![i * 2 + 1]);
             segments[i] = value;
         }
 
-        List<(int, int)> zeroSections = new();
-        
+        List<(int, int)> zeroSections = [];
+
         bool inZeroSection = false;
         int currentCounter = 0;
 
         // Find all indices at which zeros occur. The second integer indicates the additional zeros afterwards.
-        for(int i = 0; i < segments.Length; i++)
+        for (int i = 0; i < segments.Length; i++)
         {
-            if(segments[i] == 0)
+            if (segments[i] == 0)
             {
-                if(inZeroSection)
+                if (inZeroSection)
                 {
                     currentCounter++;
                 }
@@ -170,13 +171,13 @@ public class IPv6Network : IPNetwork
                 }
                 continue;
             }
-            if(inZeroSection)
+            if (inZeroSection)
             {
                 zeroSections.Add((i - 1 - currentCounter, currentCounter));
             }
             inZeroSection = false;
         }
-        if(inZeroSection)
+        if (inZeroSection)
             zeroSections.Add((segments.Length - 1 - currentCounter, currentCounter));
 
         // Select the longest continous streak of zeros, which will become '::'
@@ -184,30 +185,30 @@ public class IPv6Network : IPNetwork
 
         bool tillEnd = longest != null && longest.Value.Item1 + longest.Value.Item2 == 7;
 
-        for(int i = 0; i < segments.Length; i++)
+        for (int i = 0; i < segments.Length; i++)
         {
-            if(excludeZeroSegments && longest != null)
+            if (excludeZeroSegments && longest != null)
             {
-                if(longest.Value.Item1 == i)
+                if (longest.Value.Item1 == i)
                 {
-                    sb.Append(":");
+                    sb.Append(':');
                     continue;
                 }
-                else if(i > longest.Value.Item1 && i <= longest.Value.Item1 + longest.Value.Item2)
+                else if (i > longest.Value.Item1 && i <= longest.Value.Item1 + longest.Value.Item2)
                     continue;
             }
-            if(i != 0)
-                sb.Append(":");
+            if (i != 0)
+                sb.Append(':');
             sb.AppendFormat("{0:x}", segments[i]);
         }
 
         // If the last segment is part of a zero-streak, we need to fill up a missing colon
-        if(tillEnd)
-            sb.Append(":");
+        if (tillEnd)
+            sb.Append(':');
 
         return sb.ToString();
     }
-    
+
     public static byte[] ParseAddressString(string addressString)
     {
         const int maxSegments = 8;
@@ -215,80 +216,82 @@ public class IPv6Network : IPNetwork
         using StringReader sr = new(addressString);
         int charValue;
 
-        List<string> partA = new();
-        List<string> partB = new();
+        List<string> partA = [];
+        List<string> partB = [];
 
         bool hasSeenDoubleSeparator = false;
 
-        Func<List<string>> getList = () => hasSeenDoubleSeparator ? partB : partA;
-        Func<bool> checkSegmentCount = () => partA.Count + partB.Count <= maxSegments;
+        List<string> getList() => hasSeenDoubleSeparator ? partB : partA;
+        bool checkSegmentCount() => partA.Count + partB.Count <= maxSegments;
 
         StringBuilder buffer = new();
 
         ParseState state = ParseState.ReadyForData;
 
-        while((charValue = sr.Read()) != -1)
+        while ((charValue = sr.Read()) != -1)
         {
             char character = (char)charValue;
-            switch(state)
+            switch (state)
             {
                 case ParseState.ReadyForData:
-                {
-                    if(char.IsWhiteSpace(character))
-                        continue; // Ignore whitespace
-                    else if(char.IsAsciiHexDigit(character))
                     {
-                        buffer.Append(character);
+                        if (char.IsWhiteSpace(character))
+                            continue; // Ignore whitespace
+                        else if (char.IsAsciiHexDigit(character))
+                        {
+                            buffer.Append(character);
+                        }
+                        else if (character == ':')
+                        {
+                            if (buffer.Length > 0)
+                                getList().Add(buffer.ToString()); // We finished the previous segment
+                            buffer.Clear();
+                            if (!checkSegmentCount())
+                                throw new FormatException("Too many segments in IPv6 address.");
+                            state = ParseState.InSeparator;
+                        }
+                        else
+                            throw new FormatException("Invalid character in address.");
                     }
-                    else if(character == ':')
-                    {
-                        if(buffer.Length > 0)
-                            getList().Add(buffer.ToString()); // We finished the previous segment
-                        buffer.Clear();
-                        if(!checkSegmentCount())
-                            throw new FormatException("Too many segments in IPv6 address.");
-                        state = ParseState.InSeparator;
-                    }
-                    else
-                        throw new FormatException("Invalid character in address.");
-                } break;
+                    break;
                 case ParseState.InSeparator:
-                {
-                    if(char.IsWhiteSpace(character))
-                        continue; // Ignore whitespace
-                    else if(character == ':') // we have a double :: separator
                     {
-                        if(hasSeenDoubleSeparator)
-                            throw new FormatException("Invalid IPv6 address format: Saw '::' twice");
-                        hasSeenDoubleSeparator = true;
-                    }
-                    else if(char.IsAsciiHexDigit(character))
-                    {
-                        buffer.Append(character); // Add current digit to next segment
+                        if (char.IsWhiteSpace(character))
+                            continue; // Ignore whitespace
+                        else if (character == ':') // we have a double :: separator
+                        {
+                            if (hasSeenDoubleSeparator)
+                                throw new FormatException("Invalid IPv6 address format: Saw '::' twice");
+                            hasSeenDoubleSeparator = true;
+                        }
+                        else if (char.IsAsciiHexDigit(character))
+                        {
+                            buffer.Append(character); // Add current digit to next segment
 
-                        state = ParseState.ReadyForData;
+                            state = ParseState.ReadyForData;
+                        }
+                        else
+                            throw new FormatException("Invalid character in address.");
+
                     }
-                    else
-                        throw new FormatException("Invalid character in address.");
-                    
-                } break;
+                    break;
                 default:
                     throw new Exception("This should not happen :c");
             }
         }
-        if(buffer.Length > 0)
+        if (buffer.Length > 0)
             getList().Add(buffer.ToString());
-        if(!checkSegmentCount())
+        if (!checkSegmentCount())
             throw new FormatException("Too many segments in IPv6 address.");
 
         int missingSegments = maxSegments - partA.Count - partB.Count;
 
-        if(!hasSeenDoubleSeparator && missingSegments > 0)
+        if (!hasSeenDoubleSeparator && missingSegments > 0)
             throw new FormatException("Invalid IPv6 address (Missing segments).");
 
-        List<byte> bytes = new();
+        List<byte> bytes = [];
 
-        foreach(string value in partA.Concat(Enumerable.Repeat("0000", missingSegments)).Concat(partB))
+        foreach (string value in partA.Concat(Enumerable.Repeat("0000", missingSegments)).Concat(partB))
         {
             if (!ushort.TryParse(value, NumberStyles.HexNumber, null, out ushort v))
                 throw new FormatException("Invalid hex value for IPv6 segment.");
@@ -296,6 +299,6 @@ public class IPv6Network : IPNetwork
             bytes.Add((byte)(v & 0xFF));
         }
 
-        return bytes.ToArray();
+        return [.. bytes];
     }
 }
