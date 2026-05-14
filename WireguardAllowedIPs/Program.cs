@@ -4,7 +4,7 @@ namespace WireguardAllowedIPs;
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
         static void PrintHelp()
         {
@@ -25,7 +25,7 @@ public class Program
         if (args.Length == 0)
         {
             PrintHelp();
-            return;
+            return 1;
         }
 
         string[] allowedIps = [];
@@ -49,12 +49,12 @@ public class Program
                     {
                         case "help" or "h":
                             PrintHelp();
-                            return;
+                            return 0;
                         case "allowed" or "a":
                             if (i == args.Length - 1)
                             {
                                 Console.WriteLine($"Missing allowed IPs argument! (after '{innerArg}')");
-                                return;
+                                return 254;
                             }
                             allowedIps = args[++i].Split(',');
                             break;
@@ -62,13 +62,13 @@ public class Program
                             if (i == args.Length - 1)
                             {
                                 Console.WriteLine($"Missing disallowed IPs argument! (after '{innerArg}')");
-                                return;
+                                return 254;
                             }
                             disallowedIps = args[++i].Split(',');
                             break;
                         default:
                             Console.WriteLine($"Unknown argument '{innerArg}'. Use --help for help.");
-                            return;
+                            return 254;
                     }
                 }
             }
@@ -92,7 +92,7 @@ public class Program
             catch (Exception ex)
             {
                 Console.WriteLine($"Could not parse network '{allowedIps[i]}': {ex.Message}");
-                return;
+                return 2;
             }
         }
 
@@ -105,11 +105,13 @@ public class Program
             catch (Exception ex)
             {
                 Console.WriteLine($"Could not parse network '{disallowedIps[i]}': {ex.Message}");
-                return;
+                return 2;
             }
         }
 
         IPNetwork[] result = Calculator.CalculateAllowedIPs(allowed, disallowed);
         Console.WriteLine(string.Join<IPNetwork>(", ", result));
+
+        return 0;
     }
 }

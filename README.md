@@ -83,21 +83,20 @@ tools to calculate `AllowedIPs`.
 
 Example Code: ([Demo.cs](/WireguardAllowedIPs/Demo.cs))
 ```cs
-string[] allowedIPs = new[] {
+string[] allowedIPs = [
     "0.0.0.0/0",
     "::/0"
-};
-string[] disallowedIPs = new[] {
+];
+string[] disallowedIPs = [
     "10.0.0.0/8",
     "192.168.0.0/16",
     "172.16.0.0/12",
     "72.8.99.100/32"
-};
-
-// Calculate AllowedIPs based on the values above
-IPNetwork[] result = Calculator.CalculateAllowedIPs(allowedIPs, disallowedIPs);
+];
 
 // The IP-Types have implementations for ToString
+IPNetwork[] result = Calculator.CalculateAllowedIPs(allowedIPs, disallowedIPs);
+
 Console.WriteLine($"AllowedIPs = {string.Join<IPNetwork>(",", result)}");
 ```
 

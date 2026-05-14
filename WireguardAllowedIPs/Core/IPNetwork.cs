@@ -1,13 +1,13 @@
 namespace WireguardAllowedIPs.Core;
 
 /// <summary>
-/// Baseclass for IPv4Network and IPv6Network
+/// Base class for IPv4Network and IPv6Network
 /// </summary>
-public abstract class IPNetwork(int cidr)
+public abstract class IPNetwork(byte[] addressBytes, int cidr)
 {
     public int Cidr { get; set; } = cidr;
     public abstract string AddressRepresentation { get; }
-    public byte[]? AddressBytes { get; protected set; }
+    public byte[] AddressBytes { get; } = addressBytes;
 
     /// <summary>
     /// Tests if the current instance fully contains another network. <br/>
@@ -33,7 +33,7 @@ public abstract class IPNetwork(int cidr)
     /// (The netmask must match the bitlength of the address type, 32 for IPv4 and 128 for IPv6)
     /// </summary>
     /// <param name="b">The higher address to move towards.</param>
-    /// <returns>An array of IPNetwork-Instances which describe all the address 
+    /// <returns>An array of IPNetwork-Instances which describe all the address
     /// ranges between this instance and <paramref name="b"/></returns>
     public abstract IPNetwork[] SummarizeAddressRangeWith(IPNetwork b);
 
@@ -51,7 +51,7 @@ public abstract class IPNetwork(int cidr)
     /// Example inputs: 192.168.1.1/24 or fe80::/64
     /// </summary>
     /// <param name="value">The string to parse</param>
-    /// <returns>Either an instance of <see cref="IPv4Network"/> or <see cref="IPv6Network"/> 
+    /// <returns>Either an instance of <see cref="IPv4Network"/> or <see cref="IPv6Network"/>
     /// containing the information obtained from the string.</returns>
     /// <exception cref="FormatException"></exception>
     public static IPNetwork Parse(string value)
@@ -65,4 +65,7 @@ public abstract class IPNetwork(int cidr)
             return new IPv6Network(parts[0], cidr);
         return new IPv4Network(parts[0], cidr);
     }
+
+    protected ArgumentException DifferentTypeException(string? paramName)
+        => new($"Can only compare to another instance of {GetType()}", paramName);
 }

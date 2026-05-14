@@ -3,7 +3,7 @@ using System.Text;
 
 namespace WireguardAllowedIPs.Core;
 
-public class IPv6Network : IPNetwork
+public class IPv6Network : IPNetwork, IEquatable<IPv6Network>
 {
     private enum ParseState
     {
@@ -14,54 +14,56 @@ public class IPv6Network : IPNetwork
     public override string AddressRepresentation => GetAddressString();
 
     public UInt128 AddressValue => (UInt128)(
-                                    ((UInt128)AddressBytes![0] << 120) |
-                                    ((UInt128)AddressBytes![1] << 112) |
-                                    ((UInt128)AddressBytes![2] << 104) |
-                                    ((UInt128)AddressBytes![3] << 96) |
-                                    ((UInt128)AddressBytes![4] << 88) |
-                                    ((UInt128)AddressBytes![5] << 80) |
-                                    ((UInt128)AddressBytes![6] << 72) |
-                                    ((UInt128)AddressBytes![7] << 64) |
-                                    ((UInt128)AddressBytes![8] << 56) |
-                                    ((UInt128)AddressBytes![9] << 48) |
-                                    ((UInt128)AddressBytes![10] << 40) |
-                                    ((UInt128)AddressBytes![11] << 32) |
-                                    ((UInt128)AddressBytes![12] << 24) |
-                                    ((UInt128)AddressBytes![13] << 16) |
-                                    ((UInt128)AddressBytes![14] << 8) |
-                                    ((UInt128)AddressBytes![15])
-                                );
+        ((UInt128)AddressBytes[0] << 120) |
+        ((UInt128)AddressBytes[1] << 112) |
+        ((UInt128)AddressBytes[2] << 104) |
+        ((UInt128)AddressBytes[3] << 96) |
+        ((UInt128)AddressBytes[4] << 88) |
+        ((UInt128)AddressBytes[5] << 80) |
+        ((UInt128)AddressBytes[6] << 72) |
+        ((UInt128)AddressBytes[7] << 64) |
+        ((UInt128)AddressBytes[8] << 56) |
+        ((UInt128)AddressBytes[9] << 48) |
+        ((UInt128)AddressBytes[10] << 40) |
+        ((UInt128)AddressBytes[11] << 32) |
+        ((UInt128)AddressBytes[12] << 24) |
+        ((UInt128)AddressBytes[13] << 16) |
+        ((UInt128)AddressBytes[14] << 8) |
+        ((UInt128)AddressBytes[15])
+    );
 
-    public IPv6Network(byte[] bytes, int cidr) : base(cidr)
+    public IPv6Network(byte[] bytes, int cidr)
+        : base(bytes, cidr)
     {
         if (bytes.Length != 16)
             throw new ArgumentException("An IPv6 address always consists of 128 bits (16 bytes)");
         if (cidr < 0 || cidr > 128)
             throw new ArgumentOutOfRangeException(nameof(cidr), "CIDR must be between 0 and 128 (both inclusive)");
-        AddressBytes = bytes;
     }
 
-    public IPv6Network(UInt128 value, int cidr) : this([
-        (byte)(value >> 120),
-        (byte)((value >> 112) & 0xFF),
-        (byte)((value >> 104) & 0xFF),
-        (byte)((value >> 96) & 0xFF),
-        (byte)((value >> 88) & 0xFF),
-        (byte)((value >> 80) & 0xFF),
-        (byte)((value >> 72) & 0xFF),
-        (byte)((value >> 64) & 0xFF),
-        (byte)((value >> 56) & 0xFF),
-        (byte)((value >> 48) & 0xFF),
-        (byte)((value >> 40) & 0xFF),
-        (byte)((value >> 32) & 0xFF),
-        (byte)((value >> 24) & 0xFF),
-        (byte)((value >> 16) & 0xFF),
-        (byte)((value >> 8) & 0xFF),
-        (byte)(value & 0xFF)
-    ], cidr)
+    public IPv6Network(UInt128 value, int cidr)
+        : this([
+            (byte)(value >> 120),
+            (byte)((value >> 112) & 0xFF),
+            (byte)((value >> 104) & 0xFF),
+            (byte)((value >> 96) & 0xFF),
+            (byte)((value >> 88) & 0xFF),
+            (byte)((value >> 80) & 0xFF),
+            (byte)((value >> 72) & 0xFF),
+            (byte)((value >> 64) & 0xFF),
+            (byte)((value >> 56) & 0xFF),
+            (byte)((value >> 48) & 0xFF),
+            (byte)((value >> 40) & 0xFF),
+            (byte)((value >> 32) & 0xFF),
+            (byte)((value >> 24) & 0xFF),
+            (byte)((value >> 16) & 0xFF),
+            (byte)((value >> 8) & 0xFF),
+            (byte)(value & 0xFF)
+        ], cidr)
     { }
 
-    public IPv6Network(string addressString, int cidr) : this(ParseAddressString(addressString), cidr)
+    public IPv6Network(string addressString, int cidr)
+        : this(ParseAddressString(addressString), cidr)
     { }
 
     public UInt128 GetHostMask() => Cidr == 0 ? UInt128.MaxValue : (UInt128.One << (128 - Cidr)) - 1;
@@ -69,26 +71,26 @@ public class IPv6Network : IPNetwork
     public UInt128 GetLowAddressValue() => AddressValue & GetNetworkMask();
     public UInt128 GetHighAddressValue() => AddressValue | GetHostMask();
 
-    private static ArgumentException DifferentTypeException() => new("other", $"Can only compare to another instance of {nameof(IPv6Network)}");
-
     public override bool Contains(IPNetwork other)
     {
         if (other is IPv6Network ip)
         {
             return ip.GetLowAddressValue() >= GetLowAddressValue()
-                   && ip.GetHighAddressValue() <= GetHighAddressValue();
+                && ip.GetHighAddressValue() <= GetHighAddressValue();
         }
-        throw DifferentTypeException();
+
+        throw DifferentTypeException(nameof(other));
     }
 
     public override bool Overlaps(IPNetwork other)
     {
         if (other is IPv6Network ip)
         {
-            return UInt128.Max(ip.GetLowAddressValue(), GetLowAddressValue()) <=
-                   UInt128.Min(ip.GetHighAddressValue(), GetHighAddressValue());
+            return UInt128.Max(ip.GetLowAddressValue(), GetLowAddressValue())
+                <= UInt128.Min(ip.GetHighAddressValue(), GetHighAddressValue());
         }
-        throw DifferentTypeException();
+
+        throw DifferentTypeException(nameof(other));
     }
 
     // Adapted from python sources
@@ -107,8 +109,12 @@ public class IPv6Network : IPNetwork
             List<IPv6Network> list = [];
             while (first <= last)
             {
-                int nbits = Math.Min(Util.CountRighthandZeroBits128(first), Util.BitLength128(last - first + 1) - 1);
+                int nbits = Math.Min(
+                    Util.CountRighthandZeroBits128(first),
+                    Util.BitLength128(last - first + 1) - 1
+                );
                 list.Add(new IPv6Network(first, 128 - nbits));
+
                 try
                 {
                     checked
@@ -123,15 +129,33 @@ public class IPv6Network : IPNetwork
             }
             return [.. list];
         }
-        throw DifferentTypeException();
+
+        throw DifferentTypeException(nameof(other));
+    }
+
+    public static bool operator ==(IPv6Network? a, IPv6Network? b)
+    {
+        if (a is null)
+            return b is null;
+
+        return a.Equals(b);
+    }
+
+    public static bool operator !=(IPv6Network? a, IPv6Network? b)
+    {
+        return !(a == b);
+    }
+
+    public bool Equals(IPv6Network? other)
+    {
+        if (other == null)
+            return false;
+
+        return other.Cidr == Cidr && other.AddressValue == AddressValue;
     }
 
     public override bool Equals(object? obj)
-    {
-        if (obj is IPv6Network ip)
-            return ip.AddressValue == AddressValue && ip.Cidr == Cidr;
-        return false;
-    }
+        => Equals(obj as IPv6Network);
 
     public override int GetHashCode()
     {
@@ -146,7 +170,7 @@ public class IPv6Network : IPNetwork
         ushort[] segments = new ushort[8];
         for (int i = 0; i < 8; i++)
         {
-            ushort value = (ushort)((AddressBytes![i * 2] << 8) | AddressBytes![i * 2 + 1]);
+            ushort value = (ushort)((AddressBytes[i * 2] << 8) | AddressBytes[i * 2 + 1]);
             segments[i] = value;
         }
 
@@ -213,7 +237,7 @@ public class IPv6Network : IPNetwork
     {
         const int maxSegments = 8;
 
-        using StringReader sr = new(addressString);
+        using StringReader reader = new(addressString);
         int charValue;
 
         List<string> partA = [];
@@ -221,14 +245,14 @@ public class IPv6Network : IPNetwork
 
         bool hasSeenDoubleSeparator = false;
 
-        List<string> getList() => hasSeenDoubleSeparator ? partB : partA;
-        bool checkSegmentCount() => partA.Count + partB.Count <= maxSegments;
+        List<string> GetList() => hasSeenDoubleSeparator ? partB : partA;
+        bool CheckSegmentCount() => partA.Count + partB.Count <= maxSegments;
 
         StringBuilder buffer = new();
 
         ParseState state = ParseState.ReadyForData;
 
-        while ((charValue = sr.Read()) != -1)
+        while ((charValue = reader.Read()) != -1)
         {
             char character = (char)charValue;
             switch (state)
@@ -244,9 +268,9 @@ public class IPv6Network : IPNetwork
                         else if (character == ':')
                         {
                             if (buffer.Length > 0)
-                                getList().Add(buffer.ToString()); // We finished the previous segment
+                                GetList().Add(buffer.ToString()); // We finished the previous segment
                             buffer.Clear();
-                            if (!checkSegmentCount())
+                            if (!CheckSegmentCount())
                                 throw new FormatException("Too many segments in IPv6 address.");
                             state = ParseState.InSeparator;
                         }
@@ -280,8 +304,8 @@ public class IPv6Network : IPNetwork
             }
         }
         if (buffer.Length > 0)
-            getList().Add(buffer.ToString());
-        if (!checkSegmentCount())
+            GetList().Add(buffer.ToString());
+        if (!CheckSegmentCount())
             throw new FormatException("Too many segments in IPv6 address.");
 
         int missingSegments = maxSegments - partA.Count - partB.Count;

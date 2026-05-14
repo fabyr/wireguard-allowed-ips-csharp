@@ -4,20 +4,21 @@ public static class Calculator
 {
     public static IPNetwork[] CalculateAllowedIPs(IPNetwork[] allowed, IPNetwork[] disallowed)
     {
-        IPv4Network[] v4allowed = allowed.OfType<IPv4Network>().ToArray();
-        IPv4Network[] v4disallowed = disallowed.OfType<IPv4Network>().ToArray();
+        IPv4Network[] v4allowed = [.. allowed.OfType<IPv4Network>()];
+        IPv4Network[] v4disallowed = [.. disallowed.OfType<IPv4Network>()];
 
-        IPv6Network[] v6allowed = allowed.OfType<IPv6Network>().ToArray();
-        IPv6Network[] v6disallowed = disallowed.OfType<IPv6Network>().ToArray();
+        IPv6Network[] v6allowed = [.. allowed.OfType<IPv6Network>()];
+        IPv6Network[] v6disallowed = [.. disallowed.OfType<IPv6Network>()];
 
-        return CalculateAllowedIPv4s(v4allowed, v4disallowed).Cast<IPNetwork>()
-               .Concat(CalculateAllowedIPv6s(v6allowed, v6disallowed))
-               .ToArray();
+        return [
+            .. CalculateAllowedIPv4s(v4allowed, v4disallowed),
+            .. CalculateAllowedIPv6s(v6allowed, v6disallowed)
+        ];
     }
 
     private static IPNetwork[] CleanAllowedIPs(IPNetwork[] values, IPNetwork[] allowed, IPNetwork[] disallowed)
     {
-        List<IPNetwork> result = new(values);
+        List<IPNetwork> result = [.. values];
 
         // Remove all entries which conflict with one or more disallowed ips
         result.RemoveAll(x => disallowed.Any(y => x.Overlaps(y)));
@@ -30,21 +31,26 @@ public static class Calculator
         result.AddRange(allowed.Where(x => !disallowed.Any(y => y.Overlaps(x))));
 
         // Remove duplicates and return
-        return result.Distinct().ToArray();
+        return [.. result.Distinct()];
     }
 
     public static IPv4Network[] CalculateAllowedIPv4s(IPv4Network[] allowed, IPv4Network[] disallowed)
     {
         if (disallowed.Length == 0)
             return allowed;
+
         List<IPv4Network> result = [];
 
         // Remove duplicates
-        disallowed = disallowed.Distinct().ToArray();
+        disallowed = [.. disallowed.Distinct()];
 
         // Remove disallowed ranges which are already contained within another disallowed range
         // Then sort by ascending address value
-        IPv4Network[] sortedDisallowed = [.. disallowed.Where(x => !disallowed.Any(y => !x.Equals(y) && y.Contains(x))).OrderBy(x => x.GetLowAddressValue())];
+        IPv4Network[] sortedDisallowed = [
+            .. disallowed
+                .Where(x => !disallowed.Any(y => !x.Equals(y) && y.Contains(x)))
+                .OrderBy(x => x.GetLowAddressValue())
+        ];
 
         IPv4Network last = new(0, 32);
 
@@ -76,11 +82,16 @@ public static class Calculator
 
         if (disallowed.Length == 0)
             return allowed;
+
         List<IPv6Network> result = [];
 
-        disallowed = disallowed.Distinct().ToArray();
+        disallowed = [.. disallowed.Distinct()];
 
-        IPv6Network[] sortedDisallowed = [.. disallowed.Where(x => !disallowed.Any(y => !x.Equals(y) && y.Contains(x))).OrderBy(x => x.GetLowAddressValue())];
+        IPv6Network[] sortedDisallowed = [
+            .. disallowed
+                .Where(x => !disallowed.Any(y => !x.Equals(y) && y.Contains(x)))
+                .OrderBy(x => x.GetLowAddressValue())
+        ];
 
         IPv6Network last = new(UInt128.Zero, 128);
 
@@ -102,6 +113,8 @@ public static class Calculator
     }
 
     public static IPNetwork[] CalculateAllowedIPs(string[] allowed, string[] disallowed)
-        => CalculateAllowedIPs(allowed.Select(IPNetwork.Parse).ToArray(),
-                               disallowed.Select(IPNetwork.Parse).ToArray());
+        => CalculateAllowedIPs(
+            [.. allowed.Select(IPNetwork.Parse)],
+            [.. disallowed.Select(IPNetwork.Parse)]
+        );
 }
