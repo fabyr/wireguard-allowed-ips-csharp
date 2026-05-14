@@ -3,6 +3,11 @@ namespace WireguardAllowedIPs.Tests;
 
 public class AllowedIPsTest
 {
+    private static void AssertOutput<T>(T[] output, T[] expected)
+    {
+        Assert.True(new HashSet<T>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+    }
+
     [Fact]
     public void Test1()
     {
@@ -14,7 +19,7 @@ public class AllowedIPsTest
 
         IPNetwork[] output = Calculator.CalculateAllowedIPs(allowed, disallowed);
 
-        Assert.True(new HashSet<IPNetwork>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+        AssertOutput(output, expected);
     }
 
     [Fact]
@@ -29,7 +34,7 @@ public class AllowedIPsTest
 
         IPNetwork[] output = Calculator.CalculateAllowedIPs(allowed, disallowed);
 
-        Assert.True(new HashSet<IPNetwork>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+        AssertOutput(output, expected);
     }
 
     [Fact]
@@ -44,7 +49,7 @@ public class AllowedIPsTest
 
         IPNetwork[] output = Calculator.CalculateAllowedIPs(allowed, disallowed);
 
-        Assert.True(new HashSet<IPNetwork>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+        AssertOutput(output, expected);
     }
 
     [Fact]
@@ -59,7 +64,7 @@ public class AllowedIPsTest
 
         IPNetwork[] output = Calculator.CalculateAllowedIPs(allowed, disallowed);
 
-        Assert.True(new HashSet<IPNetwork>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+        AssertOutput(output, expected);
     }
 
     [Fact]
@@ -74,7 +79,7 @@ public class AllowedIPsTest
 
         IPNetwork[] output = Calculator.CalculateAllowedIPs(allowed, disallowed);
 
-        Assert.True(new HashSet<IPNetwork>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+        AssertOutput(output, expected);
     }
 
     [Fact]
@@ -88,7 +93,21 @@ public class AllowedIPsTest
 
         string[] output = Calculator.CalculateAllowedIPs(allowed, disallowed).Select(x => x.ToString()).ToArray();
 
-        Assert.True(new HashSet<string>(expected).SetEquals(output), $"Missing Values: {string.Join(",", expected.Where(x => !output.Contains(x)))}; {string.Join(",", output.Where(x => !expected.Contains(x)))}");
+        AssertOutput(output, expected);
+    }
+
+    [Fact]
+    public void Test6_ExcludePart()
+    {
+        string[] allowed = ["10.0.0.0/8", "192.168.0.0/16"];
+
+        string[] disallowed = ["192.168.100.0/24"];
+
+        string[] expected = ["10.0.0.0/8", "192.168.0.0/18", "192.168.64.0/19", "192.168.96.0/22", "192.168.101.0/24", "192.168.102.0/23", "192.168.104.0/21", "192.168.112.0/20", "192.168.128.0/17"];
+
+        string[] output = Calculator.CalculateAllowedIPs(allowed, disallowed).Select(x => x.ToString()).ToArray();
+
+        AssertOutput(output, expected);
     }
 }
 #pragma warning restore CA1861 // Avoid constant arrays as arguments

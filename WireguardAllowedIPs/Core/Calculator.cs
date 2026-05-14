@@ -22,9 +22,9 @@ public static class Calculator
         // Remove all entries which conflict with one or more disallowed ips
         result.RemoveAll(x => disallowed.Any(y => x.Overlaps(y)));
 
-        // Remove all entries which are outside of the underlying AllowedIPs-Ranges
+        // Remove all entries which are outside of any of the underlying AllowedIPs-Ranges
         // Nothing happens here if the underlying range is the entire address space (e.g. 0.0.0.0/0 or ::/0)
-        result.RemoveAll(x => allowed.Any(y => !y.Contains(x)));
+        result.RemoveAll(x => !allowed.Any(y => y.Contains(x)));
 
         // Add the networks which did not conflict with any disallowed ips
         result.AddRange(allowed.Where(x => !disallowed.Any(y => y.Overlaps(x))));
