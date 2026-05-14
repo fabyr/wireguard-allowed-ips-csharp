@@ -1,11 +1,20 @@
 #!/bin/bash
+set -euo pipefail
 cd "$(dirname "$0")"
 
-CURRENT_VERSION="1.0.0"
+shopt -s nullglob
+shopt -s extglob
+
+if [ $# -ne 1 ]; then
+    echo >&2 "Usage: $0 <Version>"
+    exit 1
+fi
+
+CURRENT_VERSION="$1"
 
 if [ -d "./publish" ]; then
-    read -p "Delete ./publish directory [y/N]? " -r
-    
+    read -rp "Delete ./publish directory [y/N]? "
+
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         rm -rf ./publish
     else
@@ -13,57 +22,124 @@ if [ -d "./publish" ]; then
     fi
 fi
 
-dotnet build wireguard-allowed-ips.sln --configuration Release &&
+function build() {
+    local os="$1"
+    local arch="$2"
+    local output_name="$3"
+    shift 3
 
-# Single-File executables
+    dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj \
+        --configuration Release \
+        -o "./publish/$output_name" \
+        --os "$os" -a "$arch" \
+        "$@"
+}
 
-# Linux
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/linux-x64-selfcontained --os linux -a x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/linux-arm-selfcontained --os linux -a arm /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/linux-arm64-selfcontained --os linux -a arm64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
+function build_dependent() {
+    local os="$1"
+    local arch="$2"
+    shift 2
 
-# Windows
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/windows-x86-selfcontained --os win -a x86 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/windows-x64-selfcontained --os win -a x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
+    build "$os" "$arch" "$os-$arch" \
+        /p:PublishSingleFile=true
+}
 
-# Macos
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/macos-x64-selfcontained --os osx -a x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/macos-arm64-selfcontained --os osx -a arm64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true --self-contained &&
+function build_selfcontained() {
+    local os="$1"
+    local arch="$2"
+    shift 2
 
-# Runtime Executables
+    build "$os" "$arch" "$os-$arch-selfcontained" \
+        /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true \
+        --self-contained
+}
 
-# Linux
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/linux-x64 --os linux -a x64 /p:PublishSingleFile=true &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/linux-arm --os linux -a arm /p:PublishSingleFile=true &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/linux-arm64 --os linux -a arm64 /p:PublishSingleFile=true &&
+mkdir -p ./publish
 
-# Windows
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/windows-x86 --os win -a x86 /p:PublishSingleFile=true &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/windows-x64 --os win -a x64 /p:PublishSingleFile=true &&
+dotnet build wireguard-allowed-ips.slnx --configuration Release
 
-# Macos
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/macos-x64 --os osx -a x64 /p:PublishSingleFile=true &&
-dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj --configuration Release -o ./publish/macos-arm64 --os osx -a arm64 /p:PublishSingleFile=true &&
-
-echo "Done building!" &&
-
-echo "Renaming and copying all binaries to ./publish" &&
-cd ./publish &&
-for dir in $(ls); do 
-    cp $dir/$(ls $dir -I "*.pdb") ./wg-ips-$dir$(ls $dir -I "*.pdb" | egrep -o '\..+$'); 
-done &&
-echo "Creating archives..." &&
+# Selfcontained executables
 
 # Linux
-tar -czf wg-ips-$CURRENT_VERSION-linux.tar.gz $(find . -maxdepth 1 -type f -regex '^.*linux.*$' | grep -v 'selfcontained') &&
-tar -czf wg-ips-$CURRENT_VERSION-linux-selfcontained.tar.gz $(find . -maxdepth 1 -type f -regex '^.*linux.*selfcontained.*$') &&
-
-# Macos
-tar -czf wg-ips-$CURRENT_VERSION-macos.tar.gz $(find . -maxdepth 1 -type f -regex '^.*macos.*$' | grep -v 'selfcontained') &&
-tar -czf wg-ips-$CURRENT_VERSION-macos-selfcontained.tar.gz $(find . -maxdepth 1 -type f -regex '^.*macos.*selfcontained.*$') &&
+build_selfcontained linux x64
+build_selfcontained linux arm
+build_selfcontained linux arm64
 
 # Windows
-zip wg-ips-$CURRENT_VERSION-windows.zip $(find . -maxdepth 1 -type f -regex '^.*windows.*$' | grep -v 'selfcontained') &&
-zip wg-ips-$CURRENT_VERSION-windows-selfcontained.zip $(find . -maxdepth 1 -type f -regex '^.*windows.*selfcontained.*$') &&
+build_selfcontained win x86
+build_selfcontained win x64
+
+# Macos
+build_selfcontained osx x64
+build_selfcontained osx arm64
+
+# Runtime dependent executables
+
+# Linux
+build_dependent linux x64
+build_dependent linux arm
+build_dependent linux arm64
+
+# Windows
+build_dependent win x86
+build_dependent win x64
+
+# Macos
+build_dependent osx x64
+build_dependent osx arm64
+
+echo "Done building!"
+
+cd ./publish
+
+echo "Renaming binaries..."
+for dir in *; do
+    rm -f "./$dir/"*.pdb
+
+    files=("./$dir/"*)
+
+    if [ "${#files[@]}" -ne 1 ]; then
+        echo >&2 "Expected single file in '$dir'."
+        exit 1
+    fi
+
+    file="$(basename "${files[0]}")"
+
+    extension="${file#"${file%%"."*}"}"
+
+    mv "./$dir/$file" "./$dir/wg-ips-$dir$extension"
+done
+
+echo "Creating archives..."
+
+mkdir ./contents
+
+function contents() {
+    rm -f ./contents/*
+    cp -- "$@" ./contents
+}
+
+# Linux
+contents ./linux-!(*-selfcontained)/*
+tar -czvf "wg-ips-$CURRENT_VERSION-linux.tar.gz" -C ./contents .
+
+contents ./linux-*-selfcontained/*
+tar -czvf "wg-ips-$CURRENT_VERSION-linux-selfcontained.tar.gz" -C ./contents .
+
+# Macos
+contents ./osx-!(*-selfcontained)/*
+tar -czvf "wg-ips-$CURRENT_VERSION-macos.tar.gz" -C ./contents .
+
+contents ./osx-*-selfcontained/*
+tar -czvf "wg-ips-$CURRENT_VERSION-macos-selfcontained.tar.gz" -C ./contents .
+
+# Windows
+contents ./win-!(*-selfcontained)/*
+zip -FS9orj "wg-ips-$CURRENT_VERSION-windows.zip" ./contents
+
+contents ./win-*-selfcontained/*
+zip -FS9orj "wg-ips-$CURRENT_VERSION-windows-selfcontained.zip" ./contents
+
+rm -rf ./contents
 
 echo "Done!"
