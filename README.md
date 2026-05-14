@@ -7,20 +7,22 @@ Inspired by (and used for test reference):
 https://krasovs.ky/2021/07/04/wireguard-allowed-ips.html
 
 ## Table of contents
-1. [Dependencies](#dependencies)
-2. [Releases](#releases)
-3. [Usage](#usage)
-4. [Usage within another C# application](#usage-within-another-c-application)
-5. [Motivation](#motivation)
-6. [License](#license)
+- [wireguard-allowed-ips-csharp](#wireguard-allowed-ips-csharp)
+  - [Table of contents](#table-of-contents)
+  - [Dependencies](#dependencies)
+  - [Releases](#releases)
+  - [Usage](#usage)
+  - [Usage within another C# application](#usage-within-another-c-application)
+  - [Motivation](#motivation)
+  - [License](#license)
 
 ## Dependencies
-This program requires [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).
+This program requires [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
 Other than that it was designed to require no other dependencies.
 
 ## Releases
 Executable files are provided for all major platforms. (Because why not :>) \
-All files ending in `-selfcontained` do not require the `.NET 8` Runtime to be installed on the system.
+All files ending in `-selfcontained` do not require the `.NET` Runtime to be installed on the system.
 Though they are *massively greater in filesize* than the runtime dependent ones.
 
 ## Usage
