@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="WireguardAllowedIPs.Tests/WireguardAllowedIPs.Tests.csproj" />
+  <Project Path="WireguardAllowedIPs/WireguardAllowedIPs.csproj" />
+</Solution>
