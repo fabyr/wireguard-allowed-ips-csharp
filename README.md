@@ -21,9 +21,12 @@ This program requires [.NET 10](https://dotnet.microsoft.com/en-us/download/dotn
 Other than that it was designed to require no other dependencies.
 
 ## Releases
-Executable files are provided for all major platforms. (Because why not :>) \
-All files ending in `-selfcontained` do not require the `.NET` Runtime to be installed on the system.
+Executable files are provided for all major platforms. (Because why not :&gt;)
+
+All files ending in `-selfcontained` do not require the `.NET` runtime to be installed on the system.
 Though they are *massively greater in file size* than the runtime dependent ones.
+
+For `linux-x64` systems an [AOT](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot) build is provided. AOT builds are natively compiled and thus have less overhead and are much smaller in file size. They do not require any runtime.
 
 ## Usage
 (*Note:* if you want to use `dotnet run`, make sure the terminal's working directory is [WireguardAllowedIPs](/WireguardAllowedIPs/): `cd WireguardAllowedIPs` inside the reposity directory)
