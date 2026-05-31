@@ -26,13 +26,16 @@ function build() {
     local os="$1"
     local arch="$2"
     local output_name="$3"
-    shift 3
+    local configuration="$4"
+    shift 4
 
-    dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj \
-        --configuration Release \
+    if ! dotnet publish ./WireguardAllowedIPs/WireguardAllowedIPs.csproj \
+        --configuration "$configuration" \
         -o "./publish/$output_name" \
         --os "$os" -a "$arch" \
-        "$@"
+        "$@"; then
+        echo >&2 "$output_name: FAILED"
+    fi
 }
 
 function build_dependent() {
@@ -40,7 +43,7 @@ function build_dependent() {
     local arch="$2"
     shift 2
 
-    build "$os" "$arch" "$os-$arch" \
+    build "$os" "$arch" "$os-$arch-dependent" "Release" \
         /p:PublishSingleFile=true
 }
 
@@ -49,9 +52,17 @@ function build_selfcontained() {
     local arch="$2"
     shift 2
 
-    build "$os" "$arch" "$os-$arch-selfcontained" \
+    build "$os" "$arch" "$os-$arch-selfcontained" "Release" \
         /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true \
         --self-contained
+}
+
+function build_aot() {
+    local os="$1"
+    local arch="$2"
+    shift 2
+
+    build "$os" "$arch" "$os-$arch-aot" "ReleaseAOT"
 }
 
 mkdir -p ./publish
@@ -88,17 +99,34 @@ build_dependent win x64
 build_dependent osx x64
 build_dependent osx arm64
 
+# AOT executables
+
+# Linux
+build_aot linux x64
+build_aot linux arm
+build_aot linux arm64
+
+# Windows
+build_aot win x86
+build_aot win x64
+
+# Macos
+build_aot osx x64
+build_aot osx arm64
+
 echo "Done building!"
 
 cd ./publish
 
 echo "Renaming binaries..."
 for dir in *; do
-    rm -f "./$dir/"*.pdb
+    rm -f "./$dir/"*.{pdb,dbg}
 
     files=("./$dir/"*)
 
-    if [ "${#files[@]}" -ne 1 ]; then
+    if [ "${#files[@]}" -eq 0 ]; then
+        continue
+    elif [ "${#files[@]}" -gt 1 ]; then
         echo >&2 "Expected single file in '$dir'."
         exit 1
     fi
@@ -106,8 +134,13 @@ for dir in *; do
     file="$(basename "${files[0]}")"
 
     extension="${file#"${file%%"."*}"}"
+    output_name="$dir"
 
-    mv "./$dir/$file" "./$dir/wg-ips-$dir$extension"
+    if [[ "$output_name" == *"-dependent" ]]; then
+        output_name="${output_name%-dependent}"
+    fi
+
+    mv "./$dir/$file" "./$dir/wg-ips-$output_name$extension"
 done
 
 echo "Creating archives..."
@@ -115,30 +148,43 @@ echo "Creating archives..."
 mkdir ./contents
 
 function contents() {
+    if [ $# -eq 0 ]; then
+        return 1
+    fi
+
     rm -f ./contents/*
     cp -- "$@" ./contents
 }
 
 # Linux
-contents ./linux-!(*-selfcontained)/*
-tar -czvf "wg-ips-$CURRENT_VERSION-linux.tar.gz" -C ./contents .
+contents ./linux-*-dependent/* &&
+    tar -czvf "wg-ips-$CURRENT_VERSION-linux.tar.gz" -C ./contents . || :
 
-contents ./linux-*-selfcontained/*
-tar -czvf "wg-ips-$CURRENT_VERSION-linux-selfcontained.tar.gz" -C ./contents .
+contents ./linux-*-selfcontained/* &&
+    tar -czvf "wg-ips-$CURRENT_VERSION-linux-selfcontained.tar.gz" -C ./contents . || :
+
+contents ./linux-*-aot/* &&
+    tar -czvf "wg-ips-$CURRENT_VERSION-linux-aot.tar.gz" -C ./contents . || :
 
 # Macos
-contents ./osx-!(*-selfcontained)/*
-tar -czvf "wg-ips-$CURRENT_VERSION-macos.tar.gz" -C ./contents .
+contents ./osx-*-dependent/* &&
+    tar -czvf "wg-ips-$CURRENT_VERSION-macos.tar.gz" -C ./contents . || :
 
-contents ./osx-*-selfcontained/*
-tar -czvf "wg-ips-$CURRENT_VERSION-macos-selfcontained.tar.gz" -C ./contents .
+contents ./osx-*-selfcontained/* &&
+    tar -czvf "wg-ips-$CURRENT_VERSION-macos-selfcontained.tar.gz" -C ./contents . || :
+
+contents ./osx-*-aot/* &&
+    tar -czvf "wg-ips-$CURRENT_VERSION-macos-aot.tar.gz" -C ./contents . || :
 
 # Windows
-contents ./win-!(*-selfcontained)/*
-zip -FS9orj "wg-ips-$CURRENT_VERSION-windows.zip" ./contents
+contents ./win-*-dependent/* &&
+    zip -FS9orj "wg-ips-$CURRENT_VERSION-windows.zip" ./contents || :
 
-contents ./win-*-selfcontained/*
-zip -FS9orj "wg-ips-$CURRENT_VERSION-windows-selfcontained.zip" ./contents
+contents ./win-*-selfcontained/* &&
+    zip -FS9orj "wg-ips-$CURRENT_VERSION-windows-selfcontained.zip" ./contents || :
+
+contents ./win-*-aot/* &&
+    zip -FS9orj "wg-ips-$CURRENT_VERSION-windows-aot.zip" ./contents || :
 
 rm -rf ./contents
 

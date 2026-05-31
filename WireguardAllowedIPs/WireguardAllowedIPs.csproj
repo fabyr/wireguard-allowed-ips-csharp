@@ -1,6 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup Condition="$([System.String]::Copy('$(Configuration)').StartsWith('Release'))">
+    <DefineConstants>$(DefineConstants);RELEASE;TRACE</DefineConstants>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([System.String]::Copy('$(Configuration)').StartsWith('Debug'))">
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([System.String]::Copy('$(Configuration)').EndsWith('AOT'))">
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
   <PropertyGroup>
+    <Configurations>Debug;Release;ReleaseAOT</Configurations>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
